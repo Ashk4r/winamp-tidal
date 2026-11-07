@@ -49,13 +49,26 @@ export interface RowActions {
   add(): void
 }
 
-const actionButtons = ({ play, add }: RowActions, what: string): HTMLElement =>
+const actionButtons = ({ play, add }: RowActions, what: string, sourceUrl?: string): HTMLElement =>
   el(
     'span',
     { className: 'row-actions' },
+    ...(sourceUrl ? [spotifyLink(sourceUrl)] : []),
     el('button', { className: 'row-play', textContent: '▶', title: `Reproducir ${what}`, onclick: stop(play) }),
     el('button', { className: 'row-add', textContent: '+', title: `Agregar ${what} a la playlist`, onclick: stop(add) })
   )
+
+export function spotifyLink(href = 'https://open.spotify.com/'): HTMLAnchorElement {
+  return el('a', {
+    href,
+    target: '_blank',
+    className: 'spotify-link',
+    title: 'Abrir en Spotify',
+    textContent: 'Spotify ↗',
+    onclick: (event) => event.stopPropagation(),
+    ondblclick: (event) => event.stopPropagation()
+  })
+}
 
 export function trackRow(track: Track, index: number, actions: RowActions, likeEnabled: boolean): HTMLElement {
   const heart = heartButton(track.id, likeEnabled)
@@ -68,7 +81,7 @@ export function trackRow(track: Track, index: number, actions: RowActions, likeE
     el('span', { className: 't' }, track.title),
     el('span', { className: 'a' }, track.artist),
     el('span', { className: 'd' }, formatDuration(track.durationMs)),
-    actionButtons(actions, 'el tema')
+    actionButtons(actions, 'el tema', track.sourceUrl)
   )
   row.dataset.trackId = track.id
   return row
@@ -100,6 +113,7 @@ export function collectionRow(collection: Collection, open: () => void, actions?
           .join(' · ')
       )
     ),
+    ...(collection.sourceUrl ? [spotifyLink(collection.sourceUrl)] : []),
     ...(actions ? [actionButtons(actions, KIND_LABEL[collection.kind])] : [])
   )
 }

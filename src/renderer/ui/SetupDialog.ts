@@ -1,13 +1,11 @@
-import type { ProviderId } from '@shared/types'
+import { SPOTIFY_REDIRECT_URI, type ProviderId } from '@shared/types'
 import { centerOnPrimary, keepOnScreen, makeFloating } from './desktop'
 import { el } from './rows'
 
 const DASHBOARD_URL = 'https://developer.tidal.com/dashboard'
 
 /**
- * First-run setup (also the service button of the Media Library): pick TIDAL or
- * YouTube Music; for TIDAL, remote-only use or catalog mode with the user's own
- * TIDAL app; for YouTube Music, an optional Google sign-in.
+ * First-run setup and optional account setup for each music service.
  */
 export class SetupDialog {
   private placed: boolean
@@ -70,6 +68,12 @@ export class SetupDialog {
         () => void this.choose('ytmusic'),
         current === 'ytmusic'
       ),
+      this.option(
+        'Spotify',
+        'Controlá la app de Spotify para Windows. Con Spotify Premium también podés conectar tu cuenta para buscar y ver tu biblioteca.',
+        () => void this.choose('spotify'),
+        current === 'spotify'
+      ),
       el('div', { className: 'su-error' })
     )
   }
@@ -78,10 +82,67 @@ export class SetupDialog {
     try {
       const auth = await window.remote.setProvider(provider)
       if (provider === 'tidal') this.renderChoice((await window.remote.getCredentials()).hasSecret)
+      else if (provider === 'spotify') this.renderSpotify(auth.connected)
       else this.renderYouTube(auth.connected)
     } catch (error) {
       this.showError(error)
     }
+  }
+
+  private renderSpotify(connected: boolean): void {
+    this.heading.textContent = 'CONFIGURAR SPOTIFY'
+    const clientId = el('input', {
+      className: 'ml-search',
+      placeholder: 'Client ID',
+      ariaLabel: 'Spotify Client ID',
+      spellcheck: false
+    })
+    const login = el('button', { textContent: connected ? 'Volver a conectar' : 'Conectar Spotify' })
+    const submit = async (): Promise<void> => {
+      if (login.disabled) return
+      login.disabled = true
+      login.textContent = 'Esperando el inicio de sesión…'
+      try {
+        await window.remote.connect(clientId.value)
+        document.dispatchEvent(new CustomEvent('auth:changed'))
+        this.close()
+      } catch (error) {
+        this.showError(error)
+      } finally {
+        login.disabled = false
+        login.textContent = connected ? 'Volver a conectar' : 'Conectar Spotify'
+      }
+    }
+    login.onclick = () => void submit()
+    clientId.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') void submit()
+    })
+    this.body.replaceChildren(
+      el('p', {}, 'Abrí Spotify para Windows y reproducí un tema. Los controles del Winamp funcionan sin configurar una cuenta acá.'),
+      el(
+        'ol',
+        { className: 'su-steps' },
+        el(
+          'li',
+          {},
+          'Para buscar y ver tu biblioteca, creá una app con Web API en ',
+          el('a', { href: 'https://developer.spotify.com/dashboard', target: '_blank', textContent: 'Spotify Developer Dashboard' }),
+          ' con tu cuenta Premium.'
+        ),
+        el('li', {}, 'En Redirect URIs, guardá ', el('code', {}, SPOTIFY_REDIRECT_URI), '.'),
+        el('li', {}, 'Pegá el Client ID y conectate con la misma cuenta que usás en la app de Windows.')
+      ),
+      clientId,
+      el('div', { className: 'su-error' }),
+      el(
+        'div',
+        { className: 'su-buttons' },
+        el('button', { textContent: '◂ Volver', onclick: () => void this.open() }),
+        login,
+        el('button', { textContent: connected ? 'Cerrar' : 'Solo control remoto', onclick: () => this.close() })
+      )
+    )
+    clientId.focus()
   }
 
   private renderYouTube(connected: boolean): void {

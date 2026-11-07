@@ -203,6 +203,9 @@ button:disabled {
   background: var(--selected);
   color: #fff;
 }
+.ml-track:has(.spotify-link) {
+  grid-template-columns: 30px 18px minmax(0, 1fr) minmax(0, 0.8fr) 40px 92px;
+}
 .ml-track span {
   white-space: nowrap;
   overflow: hidden;
@@ -383,6 +386,15 @@ button:disabled {
 .ml-collection:hover .row-actions,
 .sd-selected .row-actions {
   visibility: visible;
+}
+.row-actions:has(.spotify-link) {
+  align-items: center;
+  visibility: visible;
+}
+.spotify-link {
+  color: var(--text);
+  font: 11px var(--font);
+  white-space: nowrap;
 }
 .row-actions button {
   width: 20px;

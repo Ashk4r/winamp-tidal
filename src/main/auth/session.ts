@@ -46,6 +46,7 @@ async function authorizedRequest<T>(
 export class OAuthSession {
   private tokens: TokenSet | undefined
   private refreshing: Promise<TokenSet> | undefined
+  private revision = 0
 
   constructor(
     private readonly key: string,
@@ -58,12 +59,21 @@ export class OAuthSession {
     return this.tokens != null
   }
 
-  async login(): Promise<void> {
-    this.save(await login(this.config()))
+  async login(config = this.config()): Promise<void> {
+    const revision = this.revision
+    const tokens = await login(config)
+    if (revision !== this.revision) throw new ApiError('Login was superseded')
+    this.replace(tokens)
   }
 
   logout(): void {
-    this.save(undefined)
+    this.replace(undefined)
+  }
+
+  private replace(tokens: TokenSet | undefined): void {
+    this.revision++
+    this.refreshing = undefined
+    this.save(tokens)
   }
 
   private save(tokens: TokenSet | undefined): void {
@@ -74,25 +84,32 @@ export class OAuthSession {
   private async accessToken(): Promise<string> {
     if (!this.tokens) throw new ApiError('Not logged in')
     if (Date.now() < this.tokens.expiresAt) return this.tokens.accessToken
-    this.refreshing ??= refresh(this.config(), this.tokens).finally(() => {
-      this.refreshing = undefined
-    })
+    const revision = this.revision
+    const pending = (this.refreshing ??= refresh(this.config(), this.tokens))
     try {
-      this.save(await this.refreshing)
+      const tokens = await pending
+      if (revision !== this.revision) throw new ApiError('Session changed during refresh')
+      this.save(tokens)
+      return tokens.accessToken
     } catch (error) {
-      this.save(undefined)
+      if (revision === this.revision) this.replace(undefined)
       throw new ApiError(`Session expired, please reconnect (${(error as Error).message})`)
+    } finally {
+      if (this.refreshing === pending) this.refreshing = undefined
     }
-    return this.tokens!.accessToken
   }
 
   request<T>(url: string, init: RequestInit = {}): Promise<T | undefined> {
+    const revision = this.revision
     return authorizedRequest<T>(
       url,
       init,
-      () => this.accessToken(),
       () => {
-        if (this.tokens) this.tokens = { ...this.tokens, expiresAt: 0 }
+        if (revision !== this.revision) throw new ApiError('Session changed during request')
+        return this.accessToken()
+      },
+      () => {
+        if (revision === this.revision && this.tokens) this.tokens = { ...this.tokens, expiresAt: 0 }
       }
     )
   }

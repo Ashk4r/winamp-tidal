@@ -34,6 +34,7 @@ export class SearchDialog {
   private connected = false
   /** Search and catalog browsing available (login or catalog mode). */
   private catalog = false
+  private mixes = false
   private loadToken = 0
   private searchTimer: ReturnType<typeof setTimeout> | undefined
   private lastResults: SearchResults | undefined
@@ -77,6 +78,9 @@ export class SearchDialog {
     root.addEventListener('keydown', (event) => this.onKey(event))
     favorites.listeners.add(() => refreshHearts(this.list, this.connected))
     document.addEventListener('search:open', () => void this.open())
+    document.addEventListener('auth:changed', () => {
+      if (!this.root.classList.contains('hidden')) void this.open()
+    })
     this.renderFilters()
   }
 
@@ -92,7 +96,11 @@ export class SearchDialog {
     const auth = await window.remote.getAuth()
     this.connected = auth.connected
     this.catalog = auth.catalog
-    if (auth.provider !== this.provider) this.history = [{ kind: 'home' }]
+    this.mixes = auth.capabilities.mixes
+    if (auth.provider !== this.provider || !auth.catalog) {
+      this.history = [{ kind: 'home' }]
+      this.input.value = ''
+    }
     this.provider = auth.provider
     this.heading.textContent = `AGREGAR DESDE ${PROVIDER_NAMES[auth.provider].toUpperCase()}`
     if (this.history.length === 1) void this.show()
@@ -172,7 +180,10 @@ export class SearchDialog {
           document.dispatchEvent(new CustomEvent('setup:open'))
         }
       })
-      this.message('Para buscar y elegir música de TIDAL desde acá, activá el modo catálogo. ', el('br'), el('br'), setup)
+      const hint = this.provider === 'spotify'
+        ? 'Conectá tu cuenta Premium para buscar y elegir música de Spotify.'
+        : 'Para buscar y elegir música de TIDAL desde acá, activá el modo catálogo.'
+      this.message(hint, el('br'), el('br'), setup)
       return
     }
 
@@ -228,7 +239,8 @@ export class SearchDialog {
     this.list.replaceChildren(
       el('div', { className: 'ml-group' }, 'ELEGÍ DE TU BIBLIOTECA O BUSCÁ ARRIBA'),
       entry('♥  Temas favoritos', { kind: 'liked' }),
-      ...SECTIONS.map(({ section, label }) => entry(`◉  ${label}`, { kind: 'section', section }))
+      ...SECTIONS.filter(({ section }) => section !== 'mixes' || this.mixes)
+        .map(({ section, label }) => entry(`◉  ${label}`, { kind: 'section', section }))
     )
   }
 

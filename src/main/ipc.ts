@@ -3,6 +3,7 @@ import type { AuthInfo, Collection, EqState, PlayContext, ProviderId, TidalCrede
 import { settingsStore } from './auth/store'
 import { Equalizer } from './audio/equalizer'
 import { createProvider } from './providers'
+import { SpotifyProvider } from './providers/spotify'
 import { TidalProvider } from './providers/tidal'
 import type { MusicProvider } from './providers/types'
 import { YtMusicProvider } from './providers/ytmusic'
@@ -30,7 +31,7 @@ export function registerIpc(window: BrowserWindow): () => void {
     configured: provider.configured,
     connected: provider.connected,
     catalog: provider.catalogAvailable,
-    hint: provider.capabilities.credentials && !provider.configured ? 'Solo control remoto' : undefined
+    hint: provider.capabilities.externalApp && !provider.configured ? 'Solo control remoto' : undefined
   })
   // Credentials only exist for TIDAL's catalog mode.
   const tidal = (): TidalProvider => {
@@ -64,9 +65,15 @@ export function registerIpc(window: BrowserWindow): () => void {
     }
 
   handle('getAuth', auth)
-  handle('connect', async () => {
-    await provider.login()
-    await provider.loadLiked()
+  handle('connect', async (spotifyClientId?: string) => {
+    const current = provider
+    if (current instanceof SpotifyProvider) {
+      await current.login(spotifyClientId)
+      if (provider === current) void current.loadLiked().catch(() => undefined)
+    } else {
+      await current.login()
+      await current.loadLiked()
+    }
     return auth()
   })
   handle('disconnect', async () => {
@@ -88,17 +95,24 @@ export function registerIpc(window: BrowserWindow): () => void {
     return auth()
   })
   handle('setProvider', async (id: ProviderId) => {
-    // YouTube Music needs nothing else; TIDAL's setup continues with its catalog choice.
-    settingsStore.update({ provider: id, ...(id === 'ytmusic' ? { setupDone: true } : {}) })
+    if (id !== 'tidal' && id !== 'ytmusic' && id !== 'spotify') throw new Error('Servicio desconocido')
+    // TIDAL's setup continues with its catalog choice.
+    settingsStore.update({ provider: id, ...(id !== 'tidal' ? { setupDone: true } : {}) })
     if (id !== provider.id) {
       const previous = provider
       stopWatching()
-      provider = createProvider(id, onLiked)
+      const next = createProvider(id, (ids) => {
+        if (provider === next) onLiked(ids)
+      })
+      provider = next
+      onLiked([])
+      broadcast('remote:state', null)
       await previous.dispose().catch(() => undefined)
+      if (provider !== next) return auth()
+      send('remote:provider', auth())
       watchState()
-      void provider.loadLiked().catch(() => undefined)
+      void next.loadLiked().catch(() => undefined)
     }
-    send('remote:provider', auth())
     return auth()
   })
   handle('getSettings', () => settingsStore.get())

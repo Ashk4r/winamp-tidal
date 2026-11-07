@@ -4,6 +4,7 @@ import type { MuseumSkin } from './skins'
 
 export interface Track {
   id: string
+  sourceUrl?: string
   title: string
   artist: string
   album?: string
@@ -16,6 +17,7 @@ export type CollectionKind = 'playlist' | 'album' | 'artist' | 'mix'
 export interface Collection {
   kind: CollectionKind
   id: string
+  sourceUrl?: string
   name: string
   subtitle?: string
   trackCount?: number
@@ -36,7 +38,7 @@ export interface PlayContext {
 }
 
 export interface PlaybackState {
-  /** TIDAL track id when known (matched in the queue or resolved through the API). */
+  /** Track ID in the active provider, when known. */
   trackId?: string
   title: string
   artist: string
@@ -67,9 +69,16 @@ export interface EqStatus {
   error?: string
 }
 
-export type ProviderId = 'tidal' | 'ytmusic'
+export type ProviderId = 'tidal' | 'ytmusic' | 'spotify'
 
-export const PROVIDER_NAMES: Record<ProviderId, string> = { tidal: 'TIDAL', ytmusic: 'YouTube Music' }
+export const PROVIDER_NAMES: Record<ProviderId, string> = {
+  tidal: 'TIDAL',
+  ytmusic: 'YouTube Music',
+  spotify: 'Spotify'
+}
+
+export const SPOTIFY_CALLBACK_PORT = 8890
+export const SPOTIFY_REDIRECT_URI = `http://127.0.0.1:${SPOTIFY_CALLBACK_PORT}/callback`
 
 export interface ProviderCapabilities {
   /** Needs the user's own developer app for search (TIDAL's catalog mode). */
@@ -93,6 +102,7 @@ export interface AuthInfo {
 export interface AppSettings {
   /** The music service the Winamp drives. */
   provider?: ProviderId
+  spotifyClientId?: string
   skinUrl?: string
   eq?: EqState
   /** Zoom factor for the whole UI. */
@@ -137,7 +147,7 @@ export interface PcmChunk {
 /** API exposed by the preload script as `window.remote`. */
 export interface RemoteApi {
   getAuth(): Promise<AuthInfo>
-  connect(): Promise<AuthInfo>
+  connect(spotifyClientId?: string): Promise<AuthInfo>
   disconnect(): Promise<AuthInfo>
   getCredentials(): Promise<CredentialsInfo>
   /** Checks and saves the user's TIDAL app, or `null` for remote-only use. Ends the first-run setup. */

@@ -1,4 +1,18 @@
-# Winamp Remote para TIDAL y YouTube Music
+# Winamp Remote für Spotify, TIDAL und YouTube Music
+
+## Spotify unter Windows
+
+Öffne die Spotify-Desktop-App und starte einen Titel. Wähle in der Winamp Media Library **Spotify** und dann **Solo control remoto**. Winamp zeigt den laufenden Titel an und steuert Play, Pause, Vor und Zurück über die Windows-Mediensteuerung. Die Musik läuft über die Spotify-Desktop-App.
+
+Für Suche, Favoriten, Alben und eigene Playlists in Winamp verbindest du optional dein Spotify-Premium-Konto:
+
+1. Erstelle im [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) eine App mit **Web API**.
+2. Trage unter **Redirect URIs** genau `http://127.0.0.1:8890/callback` ein und speichere die Einstellungen.
+3. Wähle in Winamp **Spotify**. Füge die **Client ID** ein und klicke auf **Conectar Spotify**. Melde dich im Browser mit demselben Konto wie in der Desktop-App an. Die Anmeldung wird verschlüsselt lokal gespeichert.
+
+Winamp startet ausgewählte Titel auf dem Spotify-Gerät, das den Windows-Computernamen trägt. Änderungen an der Winamp-Playlist werden beim nächsten Start eines Titels aus der Liste an Spotify übergeben. Im Spotify-Entwicklungsmodus können nur eigene Playlists und Playlists mit Bearbeitungszugriff in Winamp geöffnet werden. [Spotify-Dokumentation zum Entwicklungsmodus](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide#playlist-endpoint-renames)
+
+Der Windows-Build entsteht mit `npm ci` und `npm run dist`. Danach findest du `Winamp-Remote-Portable.exe` und `Winamp-Remote-Setup.exe` unter `dist`.
 
 **🇦🇷 Español** · [🇺🇸 English](#english)
 

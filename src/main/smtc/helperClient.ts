@@ -20,7 +20,7 @@ export interface SmtcSession {
   thumbnail?: string
 }
 
-export type SmtcTarget = 'tidal' | 'any'
+export type SmtcTarget = 'tidal' | 'spotify' | 'any'
 export type SmtcCommand =
   | 'play'
   | 'pause'
@@ -63,6 +63,7 @@ const helperPath = (): string => {
 export function matchesTarget(session: SmtcSession, target: SmtcTarget): boolean {
   const id = session.appId.toLowerCase()
   if (target === 'tidal') return id.includes('tidal') || id.includes('wimpmusic')
+  if (target === 'spotify') return id.includes('spotify')
   return true
 }
 

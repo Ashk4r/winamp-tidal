@@ -2,7 +2,7 @@ import { PROVIDER_NAMES, type AuthInfo, type Collection, type EqStatus, type Pla
 import type { RemoteController } from '../webamp/controller'
 import { LIBRARY_POSITION_KEY, makeFloating } from './desktop'
 import { favorites, library, SECTIONS, type Section } from './library'
-import { collectionRow, el, heartButton, refreshHearts, trackRow } from './rows'
+import { collectionRow, el, heartButton, refreshHearts, spotifyLink, trackRow } from './rows'
 
 type View =
   | { kind: 'liked' }
@@ -37,7 +37,7 @@ export class LibraryPanel {
   private search = el('input', { type: 'search', className: 'ml-search' })
   private heading = el('span')
   private serviceButton = el('button', {
-    title: 'Elegir el servicio de música (TIDAL o YouTube Music)',
+    title: 'Elegir el servicio de música',
     onclick: () => document.dispatchEvent(new CustomEvent('setup:open'))
   })
   private body = el('div', { className: 'ml-body' })
@@ -177,7 +177,7 @@ export class LibraryPanel {
     const opening =
       this.auth.provider === 'ytmusic'
         ? 'Iniciá sesión con tu cuenta de Google en la ventana que se abrió…'
-        : 'Abriendo el login de TIDAL en el navegador…'
+        : `Abriendo el login de ${this.service} en el navegador…`
     this.status.replaceChildren(connect ? opening : 'Desconectando…')
     try {
       await (connect ? window.remote.connect() : window.remote.disconnect())
@@ -222,6 +222,7 @@ export class LibraryPanel {
   }
 
   private renderWelcome(): void {
+    this.loadToken++
     this.history = []
     this.title.textContent = ''
     this.actions.replaceChildren()
@@ -232,6 +233,8 @@ export class LibraryPanel {
         { className: 'ml-empty' },
         this.auth.provider === 'ytmusic'
           ? 'YouTube Music suena desde el Winamp, sin abrir otra app. Buscá arriba (o con "+ Agregar desde YouTube Music") cualquier tema, disco, artista o playlist. Con "Iniciar sesión" aparecen tus favoritos, playlists y mixes.'
+          : this.auth.provider === 'spotify'
+          ? 'Elegí música en Spotify para Windows y controlala desde el Winamp. Para buscar temas y ver tu biblioteca desde acá, conectá tu cuenta Premium con el botón Spotify.'
           : !this.auth.configured
           ? 'Modo solo control remoto: elegí la música en la app de TIDAL y manejala desde el Winamp. Para buscar en TIDAL desde acá tocá "TIDAL…" arriba.'
           : this.auth.catalog
@@ -349,7 +352,10 @@ export class LibraryPanel {
   private renderNowPlaying(state: PlaybackState | null): void {
     this.nowPlayingTrackId = state?.trackId
     if (!state) {
-      this.nowPlaying.replaceChildren(el('div', { className: 'ml-now-empty' }, `${this.service} no está reproduciendo`))
+      this.nowPlaying.replaceChildren(
+        el('div', { className: 'ml-now-empty' }, `${this.service} no está reproduciendo`),
+        ...(this.auth.provider === 'spotify' ? [spotifyLink()] : [])
+      )
       return
     }
     const current = this.nowPlaying.querySelector('img')
@@ -365,7 +371,10 @@ export class LibraryPanel {
         el('div', {}, state.artist),
         el('div', { className: 'ml-now-dim' }, state.album ?? '')
       ),
-      heartButton(state.trackId, this.auth.connected)
+      heartButton(state.trackId, this.auth.connected),
+      ...(this.auth.provider === 'spotify'
+        ? [spotifyLink(state.trackId ? `https://open.spotify.com/track/${state.trackId}` : undefined)]
+        : [])
     )
   }
 }

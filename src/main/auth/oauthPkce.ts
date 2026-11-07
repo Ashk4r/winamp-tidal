@@ -44,16 +44,21 @@ async function waitForAuthorizationCode(config: OAuthConfig, url: URL, state: st
     return await new Promise<string>((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Login timed out')), LOGIN_TIMEOUT_MS)
       server = createServer((req, res) => {
-        const params = new URL(req.url ?? '/', loopbackUri(config.port)).searchParams
-        if (!req.url?.startsWith('/callback')) {
+        const callback = new URL(req.url ?? '/', loopbackUri(config.port))
+        if (callback.pathname !== '/callback') {
           res.writeHead(404).end()
+          return
+        }
+        const params = callback.searchParams
+        if (params.get('state') !== state) {
+          res.writeHead(400).end()
           return
         }
         const error = params.get('error')
         const code = params.get('code')
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-        if (error || !code || params.get('state') !== state) {
-          res.end(RESULT_PAGE(`Error de login: ${error ?? 'respuesta inválida'}`))
+        if (error || !code) {
+          res.end(RESULT_PAGE('No se pudo iniciar sesión.'))
           clearTimeout(timer)
           reject(new Error(`Login failed: ${error ?? 'invalid response'}`))
           return
@@ -67,7 +72,10 @@ async function waitForAuthorizationCode(config: OAuthConfig, url: URL, state: st
         reject(err)
       })
       server.listen(config.port, '127.0.0.1', () => {
-        void shell.openExternal(url.toString())
+        void shell.openExternal(url.toString()).catch((error) => {
+          clearTimeout(timer)
+          reject(error)
+        })
       })
     })
   } finally {
@@ -78,6 +86,7 @@ async function waitForAuthorizationCode(config: OAuthConfig, url: URL, state: st
 async function requestToken(tokenUrl: string, body: Record<string, string>): Promise<TokenSet> {
   const response = await fetch(tokenUrl, {
     method: 'POST',
+    signal: AbortSignal.timeout(15_000),
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams(body)
   })

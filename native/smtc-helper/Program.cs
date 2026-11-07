@@ -2,7 +2,7 @@
 // volume and loopback audio for the visualizer.
 //
 // Protocol (one JSON object per line):
-//   stdin  <- {"id":1,"cmd":"play|pause|toggle|next|previous|seek|stop","target":"tidal|any","positionMs":1234}
+//   stdin  <- {"id":1,"cmd":"play|pause|toggle|next|previous|seek|stop","target":"tidal|spotify|any","positionMs":1234}
 //   stdin  <- {"id":2,"cmd":"setVolume","volume":40} | {"cmd":"getVolume"} | {"cmd":"visualizer","enabled":true}
 //   stdout -> {"type":"result","id":1,"ok":true,"error":null}
 //   stdout -> {"type":"sessions","sessions":[{...}]}   (on change and every second)
@@ -56,7 +56,7 @@ static bool Matches(MediaSession session, string target) => target switch
     "tidal" => session.SourceAppUserModelId.Contains("TIDAL", StringComparison.OrdinalIgnoreCase)
             || session.SourceAppUserModelId.Contains("WiMPMusic", StringComparison.OrdinalIgnoreCase),
     "spotify" => session.SourceAppUserModelId.Contains("Spotify", StringComparison.OrdinalIgnoreCase),
-    _ => true,
+    _ => false,
 };
 
 MediaSession? FindSession(string target)
