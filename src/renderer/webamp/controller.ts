@@ -51,8 +51,8 @@ export class RemoteController {
     webamp.store.subscribe(() => this.syncQueue())
   }
 
-  /** The Winamp playlist, in order, as TIDAL tracks. */
-  private queue(): Track[] {
+  /** The Winamp playlist in playback order. */
+  queue(): Track[] {
     return this.webamp
       .getPlaylistTracks()
       .filter((entry) => entry.url.startsWith(TRACK_URL))

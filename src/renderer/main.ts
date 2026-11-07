@@ -1,3 +1,5 @@
+import { getLanguage, setLanguage, t, type Language } from '@shared/i18n'
+import type { Track } from '@shared/types'
 // Webamp plus the Milkdrop (Butterchurn) window and its built-in presets.
 import Webamp from 'webamp/butterchurn'
 import './styles/app.css'
@@ -11,6 +13,7 @@ import { favorites } from './ui/library'
 import { keepOnScreen, keepWebampOnScreen, placeOnPrimary, trackPointer, updateLayout } from './ui/desktop'
 
 const $ = <T extends HTMLElement>(selector: string): T => document.querySelector<T>(selector)!
+const PLAYLIST_ON_RELOAD = 'playlist-on-language-change'
 
 function showToast(message: string): void {
   const toast = $('#toast')
@@ -72,11 +75,13 @@ function redirectMilkdropFullscreen(webamp: Webamp): void {
 }
 
 async function main(): Promise<void> {
+  const settings = await window.remote.getSettings()
+  setLanguage(settings.language)
+  document.documentElement.lang = getLanguage()
   if (!Webamp.browserIsSupported()) {
-    document.body.textContent = 'Webamp no es compatible con este entorno.'
+    document.body.textContent = t('webampUnsupported')
     return
   }
-  const settings = await window.remote.getSettings()
 
   const webamp = new Webamp({
     ...(settings.skinUrl ? { initialSkin: { url: settings.skinUrl } } : {}),
@@ -116,7 +121,7 @@ async function main(): Promise<void> {
     keepOnScreen($('#skins'))
     // After a zoom change windows may have grown past the screen edge.
     requestAnimationFrame(recheckWebamp)
-    if (next.scale !== scale) showToast(`Tamaño ${Math.round(next.scale * 100)}%`)
+    if (next.scale !== scale) showToast(t('zoomLevel', { percent: Math.round(next.scale * 100) }))
     scale = next.scale
   })
   // Centered over the primary monitor's #stage but bounded by the whole window,
@@ -124,10 +129,28 @@ async function main(): Promise<void> {
   await webamp.renderWhenReady($('#stage'))
   controller.restoreEq(settings.eq)
 
-  library = new LibraryPanel($('#library'), controller)
+  const savedPlaylist = sessionStorage.getItem(PLAYLIST_ON_RELOAD)
+  if (savedPlaylist) {
+    sessionStorage.removeItem(PLAYLIST_ON_RELOAD)
+    controller.loadList(JSON.parse(savedPlaylist) as Track[])
+  }
+  let changingLanguage = false
+  const changeLanguage = async (language: Language): Promise<void> => {
+    if (changingLanguage) return
+    changingLanguage = true
+    try {
+      await window.remote.setLanguage(language)
+      sessionStorage.setItem(PLAYLIST_ON_RELOAD, JSON.stringify(controller.queue()))
+      location.reload()
+    } catch {
+      changingLanguage = false
+    }
+  }
+
+  library = new LibraryPanel($('#library'), controller, changeLanguage)
   new SkinDialog($('#skins'), skinActions(webamp), settings.skinUrl)
   new SearchDialog($('#tidal-search'), controller)
-  const setup = new SetupDialog($('#tidal-setup'))
+  const setup = new SetupDialog($('#tidal-setup'), changeLanguage)
   window.remote.onLiked((ids) => favorites.set(ids))
   // Another music service: its track ids mean nothing to the old one, so start over.
   window.remote.onProvider(() => {

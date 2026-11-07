@@ -1,4 +1,5 @@
-import { FEATURED_SKINS, type MuseumSkin } from '@shared/skins'
+import { t } from '@shared/i18n'
+import { featuredSkins, type MuseumSkin } from '@shared/skins'
 import { centerOnPrimary, keepOnScreen, makeFloating } from './desktop'
 import { el } from './rows'
 
@@ -23,7 +24,7 @@ export class SkinDialog {
   private input = el('input', {
     type: 'search',
     className: 'ml-search',
-    placeholder: 'Buscar en el Skin Museum (ej: pioneer, matrix, kenwood)…'
+    placeholder: t('skinSearch')
   })
   private crumb = el('div', { className: 'ml-list-title' })
   private grid = el('div', { className: 'ml-content sk-grid', tabIndex: 0 })
@@ -37,11 +38,11 @@ export class SkinDialog {
     const titlebar = el(
       'div',
       { className: 'ml-titlebar' },
-      el('span', {}, 'SKINS'),
+      el('span', {}, t('openSkins')),
       el(
         'div',
         { className: 'ml-titlebar-actions' },
-        el('button', { textContent: '×', title: 'Cerrar (Esc)', onclick: () => this.close() })
+        el('button', { textContent: '×', title: t('closeEscape'), onclick: () => this.close() })
       )
     )
     root.append(
@@ -54,16 +55,16 @@ export class SkinDialog {
         el(
           'div',
           { className: 'ml-list-actions' },
-          el('button', { textContent: 'Destacados', onclick: () => this.showFeatured() }),
-          el('button', { textContent: 'Desde archivo…', title: 'Cargar un .wsz de tu PC', onclick: () => skins.pick() }),
-          el('button', { textContent: 'Skin base', title: 'Volver al skin clásico', onclick: () => skins.reset() })
+          el('button', { textContent: t('featuredSkins'), onclick: () => this.showFeatured() }),
+          el('button', { textContent: t('skinFromFile'), title: t('skinFromFileHint'), onclick: () => skins.pick() }),
+          el('button', { textContent: t('defaultSkin'), title: t('resetSkinHint'), onclick: () => skins.reset() })
         )
       ),
       this.grid,
       el(
         'div',
         { className: 'sd-hint' },
-        'Clic para aplicar · se descargan una vez y quedan guardados · ',
+        t('skinCacheHint'),
         el('a', { href: MUSEUM_URL, target: '_blank', textContent: 'skins.webamp.org' })
       )
     )
@@ -99,8 +100,8 @@ export class SkinDialog {
   private showFeatured(): void {
     this.loadToken++
     this.input.value = ''
-    this.crumb.textContent = 'Destacados'
-    this.render(FEATURED_SKINS)
+    this.crumb.textContent = t('featuredSkins')
+    this.render(featuredSkins())
   }
 
   private async search(): Promise<void> {
@@ -108,20 +109,20 @@ export class SkinDialog {
     const query = this.input.value.trim()
     if (!query) return this.showFeatured()
     const token = ++this.loadToken
-    this.crumb.textContent = `Buscando “${query}”…`
+    this.crumb.textContent = t('searchingSkins', { query })
     try {
       const skins = await window.remote.searchSkins(query)
       if (token !== this.loadToken) return
-      this.crumb.textContent = `“${query}” · ${skins.length} skins`
+      this.crumb.textContent = t('searchResultSkins', { query, count: skins.length })
       this.render(skins)
     } catch {
-      if (token === this.loadToken) this.crumb.textContent = 'No se pudo conectar con el Skin Museum'
+      if (token === this.loadToken) this.crumb.textContent = t('skinMuseumUnavailable')
     }
   }
 
   private render(skins: MuseumSkin[]): void {
     if (!skins.length) {
-      this.grid.replaceChildren(el('div', { className: 'ml-empty' }, 'Sin resultados'))
+      this.grid.replaceChildren(el('div', { className: 'ml-empty' }, t('noResults')))
       return
     }
     this.grid.replaceChildren(

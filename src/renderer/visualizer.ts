@@ -7,6 +7,11 @@
 import butterchurn from 'butterchurn'
 import presetPack from 'butterchurn-presets'
 import { PcmAnalyser } from './webamp/pcmAnalyser'
+import { DEFAULT_LANGUAGE } from '@shared/i18n'
+
+void window.remote.getSettings().then(({ language }) => {
+  document.documentElement.lang = language ?? DEFAULT_LANGUAGE
+})
 
 const CYCLE_MS = 20_000
 const BLEND_S = 2.7

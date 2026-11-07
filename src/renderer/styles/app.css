@@ -374,6 +374,14 @@ button:disabled {
   font-size: 10px;
   font-weight: normal;
 }
+.ml-language {
+  color-scheme: dark;
+  background: var(--panel-dark);
+  color: #ddd;
+  border: 1px solid var(--bevel-light);
+  font: 10px var(--font);
+  cursor: pointer;
+}
 
 /* ---- ▶ / + row actions ---- */
 .row-actions {

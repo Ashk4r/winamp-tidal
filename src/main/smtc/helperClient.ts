@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { EventEmitter } from 'node:events'
 import { app } from 'electron'
+import { t } from '@shared/i18n'
 import type { PcmChunk, SystemVolume } from '@shared/types'
 
 /** A Windows media session (any app integrated with the system media controls). */
@@ -161,7 +162,10 @@ class SmtcClient extends EventEmitter {
       this.pending.set(id, resolve)
       child.stdin.write(JSON.stringify({ id, cmd, target, ...extra }) + '\n')
     })
-    if (!result.ok) throw new Error(result.error ?? `${cmd} failed`)
+    if (!result.ok) {
+      const message = result.error?.startsWith('No media session found') ? t('noMediaSession') : t('mediaCommandFailed')
+      throw new Error(message, { cause: result.error })
+    }
   }
 
   stop(): void {

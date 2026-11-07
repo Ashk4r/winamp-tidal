@@ -1,7 +1,9 @@
+import { t } from '@shared/i18n'
 import { PROVIDER_NAMES, type AuthInfo, type Collection, type EqStatus, type PlaybackState, type SearchResults, type Track } from '@shared/types'
 import type { RemoteController } from '../webamp/controller'
 import { LIBRARY_POSITION_KEY, makeFloating } from './desktop'
 import { favorites, library, SECTIONS, type Section } from './library'
+import { languageSelect, type ChangeLanguage } from './language'
 import { collectionRow, el, heartButton, refreshHearts, spotifyLink, trackRow } from './rows'
 
 type View =
@@ -30,14 +32,14 @@ export class LibraryPanel {
 
   private status = el('div', { className: 'ml-status' })
   private nav = el('nav', { className: 'ml-nav' })
-  private back = el('button', { className: 'ml-back', textContent: '◂', title: 'Volver' })
+  private back = el('button', { className: 'ml-back', textContent: '◂', title: t('back') })
   private title = el('div', { className: 'ml-list-title' })
   private actions = el('div', { className: 'ml-list-actions' })
   private content = el('div', { className: 'ml-content', tabIndex: 0 })
   private search = el('input', { type: 'search', className: 'ml-search' })
   private heading = el('span')
   private serviceButton = el('button', {
-    title: 'Elegir el servicio de música',
+    title: t('chooseMusicService'),
     onclick: () => document.dispatchEvent(new CustomEvent('setup:open'))
   })
   private body = el('div', { className: 'ml-body' })
@@ -45,29 +47,31 @@ export class LibraryPanel {
 
   constructor(
     root: HTMLElement,
-    private readonly controller: RemoteController
+    private readonly controller: RemoteController,
+    changeLanguage: ChangeLanguage
   ) {
     const titlebar = el(
       'div',
-      { className: 'ml-titlebar', title: 'Arrastrá para mover · L o el botón eject para mostrar/ocultar' },
+      { className: 'ml-titlebar', title: t('libraryDragHint') },
       this.heading,
       el(
         'div',
         { className: 'ml-titlebar-actions' },
+        languageSelect(changeLanguage),
         this.serviceButton,
         el('button', {
           textContent: 'Milkdrop',
-          title: 'Mostrar/ocultar el visualizador · doble clic en él para pantalla completa',
+          title: t('toggleVisualizer'),
           onclick: () => document.dispatchEvent(new CustomEvent('milkdrop:toggle'))
         }),
         el('button', {
-          textContent: 'Skins…',
-          title: 'Elegir un skin: destacados, Skin Museum o un .wsz propio',
+          textContent: t('skinsButton'),
+          title: t('chooseSkin'),
           onclick: () => document.dispatchEvent(new CustomEvent('skins:open'))
         }),
-        el('button', { textContent: 'A−', title: 'Achicar todo (Ctrl −)', onclick: () => window.remote.scaleWindow('out') }),
-        el('button', { textContent: 'A+', title: 'Agrandar todo (Ctrl +) · Ctrl 0 vuelve a 100%', onclick: () => window.remote.scaleWindow('in') }),
-        el('button', { textContent: '×', title: 'Ocultar (L)', onclick: () => root.classList.add('hidden') })
+        el('button', { textContent: 'A−', title: t('zoomOut'), onclick: () => window.remote.scaleWindow('out') }),
+        el('button', { textContent: 'A+', title: t('zoomIn'), onclick: () => window.remote.scaleWindow('in') }),
+        el('button', { textContent: '×', title: t('hideLibrary'), onclick: () => root.classList.add('hidden') })
       )
     )
     root.append(titlebar, this.status, this.body, this.nowPlaying)
@@ -122,9 +126,9 @@ export class LibraryPanel {
   }
 
   private renderService(): void {
-    this.heading.textContent = `WINAMP MEDIA LIBRARY · ${this.service.toUpperCase()}`
+    this.heading.textContent = t('libraryTitle', { service: this.service })
     this.serviceButton.textContent = `${this.service}…`
-    this.search.placeholder = `Buscar en ${this.service}…`
+    this.search.placeholder = t('searchIn', { service: this.service })
   }
 
   // ---- Status bar ------------------------------------------------------------
@@ -133,30 +137,30 @@ export class LibraryPanel {
     const tidal: (Node | string)[] = []
     if (!this.auth.configured) {
       tidal.push(
-        el('span', { className: 'ml-ok' }, `● ${this.auth.hint ?? 'Solo control remoto'}`),
+        el('span', { className: 'ml-ok' }, `● ${t('remoteOnly')}`),
         el('button', {
-          textContent: `Buscar en ${this.service}…`,
+          textContent: t('searchIn', { service: this.service }),
           onclick: () => document.dispatchEvent(new CustomEvent('setup:open'))
         })
       )
     } else if (this.auth.connected) {
       tidal.push(
-        el('span', { className: 'ml-ok' }, `● ${this.service} conectado`),
-        el('button', { textContent: 'Desconectar', onclick: () => void this.connect(false) })
+        el('span', { className: 'ml-ok' }, t('serviceConnected', { service: this.service })),
+        el('button', { textContent: t('disconnect'), onclick: () => void this.connect(false) })
       )
     } else {
       if (this.auth.catalog) {
-        tidal.push(el('span', { className: 'ml-ok', title: 'Búsqueda y catálogo sin login' }, '● Modo catálogo'))
+        tidal.push(el('span', { className: 'ml-ok', title: t('catalogWithoutSignIn') }, t('catalogBadge')))
       }
-      const label = this.auth.provider === 'ytmusic' ? 'Iniciar sesión' : `Conectar ${this.service}`
+      const label = this.auth.provider === 'ytmusic' ? t('signIn') : t('connectService', { service: this.service })
       tidal.push(el('button', { textContent: label, onclick: () => void this.connect(true) }))
     }
 
     const eq: (Node | string)[] = this.eq.error
-      ? [el('span', { className: 'ml-warn', title: this.eq.error }, '⚠ EQ sin permisos')]
+      ? [el('span', { className: 'ml-warn', title: this.eq.error }, t('eqPermissions'))]
       : this.eq.installed
-        ? [el('span', { className: 'ml-ok', title: this.eq.configDir ?? '' }, '● EQ activo')]
-        : [el('a', { href: EQ_APO_URL, target: '_blank', textContent: 'Instalar Equalizer APO' })]
+        ? [el('span', { className: 'ml-ok', title: this.eq.configDir ?? '' }, t('eqActive'))]
+        : [el('a', { href: EQ_APO_URL, target: '_blank', textContent: t('installEqualizer') })]
 
     this.status.replaceChildren(
       el('div', { className: 'ml-status-group' }, ...tidal),
@@ -164,8 +168,8 @@ export class LibraryPanel {
         'div',
         { className: 'ml-status-group' },
         el('button', {
-          textContent: `+ Agregar desde ${this.service}`,
-          title: 'Buscar y elegir temas, álbumes, artistas o playlists (J)',
+          textContent: t('addFrom', { service: this.service }),
+          title: t('searchCatalogHint'),
           onclick: () => document.dispatchEvent(new CustomEvent('search:open'))
         }),
         ...eq
@@ -176,9 +180,9 @@ export class LibraryPanel {
   private async connect(connect: boolean): Promise<void> {
     const opening =
       this.auth.provider === 'ytmusic'
-        ? 'Iniciá sesión con tu cuenta de Google en la ventana que se abrió…'
-        : `Abriendo el login de ${this.service} en el navegador…`
-    this.status.replaceChildren(connect ? opening : 'Desconectando…')
+        ? t('googleOpening')
+        : t('signInOpening', { service: this.service })
+    this.status.replaceChildren(connect ? opening : t('disconnecting'))
     try {
       await (connect ? window.remote.connect() : window.remote.disconnect())
     } catch {
@@ -214,9 +218,9 @@ export class LibraryPanel {
         onclick: () => void this.open(view, true)
       })
     this.nav.replaceChildren(
-      item('♥ Temas favoritos', { kind: 'liked' }),
-      ...SECTIONS.filter(({ section }) => section !== 'mixes' || this.auth.capabilities.mixes).map(({ section, label }) =>
-        item(label, { kind: 'section', section })
+      item(`♥ ${t('likedTracks')}`, { kind: 'liked' }),
+      ...SECTIONS.filter((section) => section !== 'mixes' || this.auth.capabilities.mixes).map((section) =>
+        item(t(section), { kind: 'section', section })
       )
     )
   }
@@ -232,14 +236,14 @@ export class LibraryPanel {
         'div',
         { className: 'ml-empty' },
         this.auth.provider === 'ytmusic'
-          ? 'YouTube Music suena desde el Winamp, sin abrir otra app. Buscá arriba (o con "+ Agregar desde YouTube Music") cualquier tema, disco, artista o playlist. Con "Iniciar sesión" aparecen tus favoritos, playlists y mixes.'
+          ? t('libraryYoutubeWelcome')
           : this.auth.provider === 'spotify'
-          ? 'Elegí música en Spotify para Windows y controlala desde el Winamp. Para buscar temas y ver tu biblioteca desde acá, conectá tu cuenta Premium con el botón Spotify.'
+          ? t('librarySpotifyWelcome')
           : !this.auth.configured
-          ? 'Modo solo control remoto: elegí la música en la app de TIDAL y manejala desde el Winamp. Para buscar en TIDAL desde acá tocá "TIDAL…" arriba.'
+          ? t('libraryTidalRemoteWelcome')
           : this.auth.catalog
-            ? 'Modo catálogo: buscá arriba (o con "+ Agregar desde TIDAL") cualquier tema, disco, artista o playlist pública y reproducilo o sumalo a la playlist. Tus favoritos, mixes y playlists aparecen cuando TIDAL habilite el login de la app.'
-            : 'Tocá "Conectar TIDAL" arriba para ver tu biblioteca. Los controles del Winamp ya funcionan sin conectar.'
+            ? t('libraryTidalCatalogWelcome')
+            : t('libraryTidalConnectWelcome')
       )
     )
   }
@@ -259,14 +263,14 @@ export class LibraryPanel {
     const stale = (): boolean => token !== this.loadToken
 
     this.actions.replaceChildren()
-    this.content.replaceChildren(el('div', { className: 'ml-empty' }, 'Cargando…'))
+    this.content.replaceChildren(el('div', { className: 'ml-empty' }, t('loading')))
     try {
       if (view.kind === 'liked') {
-        this.title.textContent = '♥ Temas favoritos'
+        this.title.textContent = `♥ ${t('likedTracks')}`
         const tracks = await library.liked()
         if (!stale()) this.showTracks(tracks)
       } else if (view.kind === 'section') {
-        this.title.textContent = SECTIONS.find((s) => s.section === view.section)!.label
+        this.title.textContent = t(view.section)
         const collections = await library.section(view.section)
         if (!stale()) this.showCollections(collections)
       } else if (view.kind === 'collection') {
@@ -275,12 +279,12 @@ export class LibraryPanel {
         const tracks = await library.tracks(collection)
         if (!stale()) this.showTracks(tracks)
       } else {
-        this.title.textContent = `Búsqueda: ${view.query}`
+        this.title.textContent = t('searchResultsFor', { query: view.query })
         const results = await window.remote.search(view.query)
         if (!stale()) this.showSearch(results)
       }
     } catch {
-      if (!stale()) this.content.replaceChildren(el('div', { className: 'ml-empty' }, 'No se pudo cargar'))
+      if (!stale()) this.content.replaceChildren(el('div', { className: 'ml-empty' }, t('loadFailed')))
     }
   }
 
@@ -289,12 +293,12 @@ export class LibraryPanel {
   private showTracks(tracks: Track[]): void {
     if (tracks.length) {
       this.actions.replaceChildren(
-        el('button', { textContent: '▶ Reproducir', onclick: () => this.controller.loadList(tracks, 0) }),
+        el('button', { textContent: t('play'), onclick: () => this.controller.loadList(tracks, 0) }),
         el('button', {
-          textContent: '⤮ Aleatorio',
+          textContent: t('shuffle'),
           onclick: () => this.controller.loadList([...tracks].sort(() => Math.random() - 0.5), 0)
         }),
-        el('button', { textContent: '+ Agregar todo', onclick: () => this.controller.enqueue(tracks) })
+        el('button', { textContent: t('addAll'), onclick: () => this.controller.enqueue(tracks) })
       )
     }
     this.content.replaceChildren(
@@ -307,7 +311,7 @@ export class LibraryPanel {
               this.auth.connected
             )
           )
-        : [el('div', { className: 'ml-empty' }, 'Vacío')])
+        : [el('div', { className: 'ml-empty' }, t('empty'))])
     )
   }
 
@@ -324,7 +328,7 @@ export class LibraryPanel {
     this.content.replaceChildren(
       ...(collections.length
         ? this.collectionRows(collections)
-        : [el('div', { className: 'ml-empty' }, 'Nada por acá todavía')])
+        : [el('div', { className: 'ml-empty' }, t('nothingHere'))])
     )
   }
 
@@ -338,22 +342,22 @@ export class LibraryPanel {
       )
     )
     const groups: [string, HTMLElement[]][] = [
-      ['TEMAS', trackRows],
-      ['ÁLBUMES (CD)', this.collectionRows(results.albums)],
-      ['ARTISTAS', this.collectionRows(results.artists)],
-      ['PLAYLISTS', this.collectionRows(results.playlists)]
+      [t('tracks').toUpperCase(), trackRows],
+      [t('searchCollection').toUpperCase(), this.collectionRows(results.albums)],
+      [t('artists').toUpperCase(), this.collectionRows(results.artists)],
+      [t('playlists').toUpperCase(), this.collectionRows(results.playlists)]
     ]
     const nodes = groups
       .filter(([, rows]) => rows.length)
       .flatMap(([label, rows]) => [el('div', { className: 'ml-group' }, label), ...rows])
-    this.content.replaceChildren(...(nodes.length ? nodes : [el('div', { className: 'ml-empty' }, 'Sin resultados')]))
+    this.content.replaceChildren(...(nodes.length ? nodes : [el('div', { className: 'ml-empty' }, t('noResults'))]))
   }
 
   private renderNowPlaying(state: PlaybackState | null): void {
     this.nowPlayingTrackId = state?.trackId
     if (!state) {
       this.nowPlaying.replaceChildren(
-        el('div', { className: 'ml-now-empty' }, `${this.service} no está reproduciendo`),
+        el('div', { className: 'ml-now-empty' }, t('noPlayback', { service: this.service })),
         ...(this.auth.provider === 'spotify' ? [spotifyLink()] : [])
       )
       return

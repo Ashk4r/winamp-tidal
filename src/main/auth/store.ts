@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, safeStorage } from 'electron'
@@ -37,7 +38,7 @@ function writeEncrypted(file: string, value: unknown): void {
     writeFileSync(path, '')
     return
   }
-  if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows no permite cifrar datos en esta cuenta')
+  if (!safeStorage.isEncryptionAvailable()) throw new Error(t('encryptionUnavailable'))
   writeFileSync(path, safeStorage.encryptString(JSON.stringify(value)))
 }
 

@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import type { PlayContext, PlaybackState, Track } from '@shared/types'
 import { smtc } from '../../smtc/helperClient'
 import type { MusicProvider } from '../types'
@@ -85,7 +86,7 @@ export class SpotifyProvider implements MusicProvider {
   }
 
   private async send(command: 'play' | 'pause' | 'next' | 'previous' | 'seek', positionMs?: number): Promise<void> {
-    if (!smtc.session('spotify')) throw new Error('Abrí Spotify en Windows y reproducí un tema para activar el control remoto.')
+    if (!smtc.session('spotify')) throw new Error(t('spotifyActivateRemote'))
     await smtc.send(command, 'spotify', { positionMs })
   }
 

@@ -1,35 +1,61 @@
-# Winamp Remote für Spotify, TIDAL und YouTube Music
+# Winamp Remote for Spotify, TIDAL and YouTube Music
 
-## Spotify unter Windows
+[English](#english) · [Deutsch](#deutsch) · [Español](#español)
 
-Öffne die Spotify-Desktop-App und starte einen Titel. Wähle in der Winamp Media Library **Spotify** und dann **Solo control remoto**. Winamp zeigt den laufenden Titel an und steuert Play, Pause, Vor und Zurück über die Windows-Mediensteuerung. Die Musik läuft über die Spotify-Desktop-App.
+Winamp Remote opens in English by default. Use the language menu in the Media Library or the first-run setup to switch between **English**, **Deutsch** and **Español**. The app remembers your selection.
+
+### Spotify on Windows
+
+Open the Spotify desktop app and start a track. In the Winamp Media Library, choose **Spotify → Remote control only**. Winamp displays the current track and controls playback through Windows.
+
+To search Spotify and browse your library in Winamp, create a Web API app in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) with your Premium account. Register `http://127.0.0.1:8890/callback` under **Redirect URIs**, paste the **Client ID** into the Winamp setup and select **Connect Spotify**. Sign in with the same account you use in the Windows app.
+
+Build the Windows installer and portable app in `dist` with `npm ci` followed by `npm run dist`.
+
+## Deutsch
+
+Englisch ist die Standardsprache. Wähle **Deutsch** in der Titelleiste der Winamp-Mediathek oder im Einrichtungsdialog. Die App merkt sich deine Auswahl.
+
+### Spotify unter Windows
+
+Öffne die Spotify-Desktop-App und starte einen Titel. Wähle in der Winamp-Mediathek **Spotify → Nur Fernsteuerung**. Winamp zeigt den laufenden Titel an und steuert Wiedergabe, Pause und Titelwechsel über die Windows-Mediensteuerung. Die Musik läuft über die Spotify-Desktop-App.
 
 Für Suche, Favoriten, Alben und eigene Playlists in Winamp verbindest du optional dein Spotify-Premium-Konto:
 
 1. Erstelle im [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) eine App mit **Web API**.
 2. Trage unter **Redirect URIs** genau `http://127.0.0.1:8890/callback` ein und speichere die Einstellungen.
-3. Wähle in Winamp **Spotify**. Füge die **Client ID** ein und klicke auf **Conectar Spotify**. Melde dich im Browser mit demselben Konto wie in der Desktop-App an. Die Anmeldung wird verschlüsselt lokal gespeichert.
+3. Wähle in Winamp **Spotify**. Füge die **Client ID** ein und klicke auf **Spotify verbinden**. Melde dich im Browser mit demselben Konto wie in der Desktop-App an. Die Anmeldung wird verschlüsselt lokal gespeichert.
 
 Winamp startet ausgewählte Titel auf dem Spotify-Gerät, das den Windows-Computernamen trägt. Änderungen an der Winamp-Playlist werden beim nächsten Start eines Titels aus der Liste an Spotify übergeben. Im Spotify-Entwicklungsmodus können nur eigene Playlists und Playlists mit Bearbeitungszugriff in Winamp geöffnet werden. [Spotify-Dokumentation zum Entwicklungsmodus](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide#playlist-endpoint-renames)
 
 Der Windows-Build entsteht mit `npm ci` und `npm run dist`. Danach findest du `Winamp-Remote-Portable.exe` und `Winamp-Remote-Setup.exe` unter `dist`.
 
-**🇦🇷 Español** · [🇺🇸 English](#english)
+### TIDAL, YouTube Music und Skins
 
-Un **Winamp 2 de verdad** (con skins `.wsz`, vía [Webamp](https://github.com/captbaritone/webamp)) para escuchar **TIDAL** o **YouTube Music**: play, pausa, playlist, volumen, el ecualizador clásico de 10 bandas, el visualizador y **Milkdrop**, todo sobre lo que está sonando.
+- **TIDAL** läuft in der Desktop-App. Für die Suche in Winamp wähle **Fernsteuerung + TIDAL-Suche** und trage die Client ID und das Client Secret deiner Entwickler-App ein. [TIDAL Developer Dashboard](https://developer.tidal.com/dashboard)
+- **YouTube Music** spielt direkt in Winamp. Melde dich mit Google an, um auf deine Favoriten, Playlists und Mixe zuzugreifen.
+- **Skins…** öffnet den Skin-Browser. Du kannst dort auch eine eigene `.wsz`-Datei laden. Mit **Milkdrop** blendest du die Visualisierung ein. Ein Doppelklick öffnet das Vollbild.
+- **L** öffnet die Mediathek, **J** öffnet die Suche. **Strg +**, **Strg −** und **Strg 0** ändern die Größe der Oberfläche.
+
+## Español
+
+El idioma inicial es inglés. Podés elegir **Español** en la barra de la Media Library o durante la configuración inicial.
+
+Un **Winamp 2 de verdad** (con skins `.wsz`, vía [Webamp](https://github.com/captbaritone/webamp)) para escuchar **Spotify**, **TIDAL** o **YouTube Music**, con controles de reproducción, playlist, volumen, ecualizador y **Milkdrop**.
 
 > Proyecto de fan, gratis y de código abierto. No está afiliado a TIDAL, YouTube ni Winamp.
 
 ## Descargar e instalar (2 minutos)
 
-1. Andá a **[Releases](https://github.com/Lisandro46/winamp-tidal/releases/latest)** y bajá uno de estos:
+1. Compilá el fork con `npm ci` y `npm run dist`. En `dist` vas a encontrar:
    - `Winamp-Remote-Setup.exe` → instalador (recomendado; crea acceso directo).
    - `Winamp-Remote-Portable.exe` → sin instalar, lo abrís y listo.
-2. Abrilo. Windows puede mostrar **"Windows protegió su PC"** porque la app no está firmada (un certificado cuesta cientos de dólares por año). Tocá **Más información → Ejecutar de todas formas**. El código es público y el instalador lo arma GitHub directamente desde este repo.
-3. La primera vez te pregunta **qué servicio usás**. Lo podés cambiar cuando quieras con el botón del servicio (**TIDAL…** / **YouTube Music…**) de la Media Library.
+2. Abrilo. Si Windows muestra **"Windows protegió su PC"**, tocá **Más información → Ejecutar de todas formas**.
+3. La primera vez te pregunta **qué servicio usás**. Lo podés cambiar con el botón del servicio de la Media Library.
 
 | Servicio | Cómo suena | Qué necesitás |
 |---|---|---|
+| **Spotify** | El Winamp maneja la app de Spotify para Windows | La app de Spotify abierta. Para buscar desde el Winamp, una app de desarrollador y una cuenta Premium |
 | **YouTube Music** | Dentro del mismo Winamp, sin otra app | Nada para buscar y escuchar. Iniciá sesión para ver tu biblioteca |
 | **TIDAL** | El Winamp maneja la app de escritorio de TIDAL | La app de TIDAL abierta. Para buscar desde el Winamp, una app gratis de desarrollador (ver abajo) |
 
@@ -130,18 +156,20 @@ El ecualizador del Winamp ecualiza el sonido de **todo Windows** usando [Equaliz
 
 ## English
 
-A **real Winamp 2** (with `.wsz` skins, via [Webamp](https://github.com/captbaritone/webamp)) for **TIDAL** or **YouTube Music**. It covers play/pause, the playlist, volume, the classic 10-band equalizer, the visualizer and **Milkdrop**. Fan project, free and open source, not affiliated with TIDAL, YouTube or Winamp.
+A **real Winamp 2** (with `.wsz` skins, via [Webamp](https://github.com/captbaritone/webamp)) for **Spotify**, **TIDAL** and **YouTube Music**. It includes playback controls, a playlist, volume, the classic 10-band equalizer, a visualizer and **Milkdrop**.
 
 ### Install
 
-1. Download the latest `Winamp-Remote-Setup.exe` (installer) or `Winamp-Remote-Portable.exe` from **[Releases](https://github.com/Lisandro46/winamp-tidal/releases/latest)**.
-2. If Windows shows *"Windows protected your PC"* (the app isn't code-signed), click **More info → Run anyway**. The installer is built by GitHub Actions straight from this repo.
+1. Run `npm ci` and `npm run dist` to build `Winamp-Remote-Setup.exe` and `Winamp-Remote-Portable.exe` in `dist`.
+2. If Windows shows *"Windows protected your PC"*, click **More info → Run anyway**.
 3. On first run, pick a service. You can switch later with the service button in the Media Library.
+
+**Spotify:** See [Spotify on Windows](#spotify-on-windows) for remote control and optional search setup.
 
 **YouTube Music:**
 - It plays inside the app, with no other app needed. Search and play without an account (with ads).
 - Sign in to see your liked songs, playlists, albums, artists and mixes. YouTube Premium means no ads.
-- If Google refuses the in-app sign-in (passkey-only accounts, "this browser may not be secure"), use **Usar la sesión de mi navegador** (use my browser's session):
+- If Google refuses the in-app sign-in (passkey-only accounts, "this browser may not be secure"), use **Use my browser session…**:
   1. Open music.youtube.com in Chrome or Edge while signed in.
   2. Press F12 and open the Network tab, then reload the page.
   3. Open a `browse` request.
@@ -156,7 +184,7 @@ A **real Winamp 2** (with `.wsz` skins, via [Webamp](https://github.com/captbari
 - To search TIDAL from Winamp:
   1. Create a free app at <https://developer.tidal.com/dashboard>.
   2. Copy its **Client ID** and **Client Secret**.
-  3. Paste them into the dialog and click **Probar y guardar** (test & save).
+  3. Paste them into the dialog and click **Test and save**.
 
   They're stored encrypted on your PC.
 
@@ -167,7 +195,7 @@ A **real Winamp 2** (with `.wsz` skins, via [Webamp](https://github.com/captbari
 
 ### Scope and limitations
 
-- **Windows 10/11 64-bit** only. The UI is in Spanish.
+- **Windows 10/11 64-bit** only. The classic Winamp skin artwork and Webamp menus use their original text.
 - YouTube Music has no official API. The app relies on its web player and internal API, which YouTube may change at any time.
 - Your TIDAL favorites, mixes and playlists need TIDAL to approve user login for third-party apps ([request](https://github.com/orgs/tidal-music/discussions/415)).
 - Playing a TIDAL track from Winamp starts its album in TIDAL and skips ahead to it, which takes a few seconds.

@@ -2,12 +2,7 @@ import type { Collection, Track } from '@shared/types'
 
 export type Section = 'mixes' | 'playlists' | 'albums' | 'artists'
 
-export const SECTIONS: { section: Section; label: string }[] = [
-  { section: 'mixes', label: 'Mixes para vos' },
-  { section: 'playlists', label: 'Playlists' },
-  { section: 'albums', label: 'Álbumes' },
-  { section: 'artists', label: 'Artistas' }
-]
+export const SECTIONS: Section[] = ['mixes', 'playlists', 'albums', 'artists']
 
 const loaders: Record<Section, () => Promise<Collection[]>> = {
   mixes: () => window.remote.getMixes(),

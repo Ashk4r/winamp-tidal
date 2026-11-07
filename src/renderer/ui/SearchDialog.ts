@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { PROVIDER_NAMES, type Collection, type ProviderId, type SearchResults, type Track } from '@shared/types'
 import type { RemoteController } from '../webamp/controller'
 import { centerOnPrimary, keepOnScreen, makeFloating } from './desktop'
@@ -13,13 +14,7 @@ type View =
   | { kind: 'section'; section: Section }
   | { kind: 'collection'; collection: Collection }
 
-const FILTERS: { filter: Filter; label: string }[] = [
-  { filter: 'all', label: 'Todo' },
-  { filter: 'tracks', label: 'Temas' },
-  { filter: 'albums', label: 'Álbumes' },
-  { filter: 'artists', label: 'Artistas' },
-  { filter: 'playlists', label: 'Playlists' }
-]
+const FILTERS: Filter[] = ['all', 'tracks', 'albums', 'artists', 'playlists']
 
 const SEARCH_DEBOUNCE_MS = 350
 
@@ -40,11 +35,11 @@ export class SearchDialog {
   private lastResults: SearchResults | undefined
   private placed: boolean
   private provider: ProviderId = 'tidal'
-  private heading = el('span', {}, 'AGREGAR DESDE TIDAL')
+  private heading = el('span', {}, t('addFromHeading', { service: PROVIDER_NAMES[this.provider] }))
 
-  private input = el('input', { type: 'search', className: 'ml-search', placeholder: 'Buscar temas, álbumes, artistas…' })
+  private input = el('input', { type: 'search', className: 'ml-search', placeholder: t('searchPlaceholder') })
   private filters = el('div', { className: 'sd-filters' })
-  private back = el('button', { className: 'ml-back', textContent: '◂', title: 'Volver (Retroceso)' })
+  private back = el('button', { className: 'ml-back', textContent: '◂', title: t('backKey') })
   private crumb = el('div', { className: 'ml-list-title' })
   private actions = el('div', { className: 'ml-list-actions' })
   private list = el('div', { className: 'ml-content sd-list', tabIndex: 0 })
@@ -60,7 +55,7 @@ export class SearchDialog {
       el(
         'div',
         { className: 'ml-titlebar-actions' },
-        el('button', { textContent: '×', title: 'Cerrar (Esc)', onclick: () => this.close() })
+        el('button', { textContent: '×', title: t('closeEscape'), onclick: () => this.close() })
       )
     )
     root.append(
@@ -68,7 +63,7 @@ export class SearchDialog {
       el('div', { className: 'sd-top' }, this.input, this.filters),
       el('div', { className: 'ml-list-header sd-header' }, this.back, this.crumb, this.actions),
       this.list,
-      el('div', { className: 'sd-hint' }, '▶ reproducir · + agregar a la playlist · ↑↓ elegir · Enter abrir/reproducir · Ctrl+Enter agregar · Esc cerrar')
+      el('div', { className: 'sd-hint' }, t('searchShortcuts'))
     )
     this.placed = makeFloating(root, titlebar, 'search-position-v1')
 
@@ -102,7 +97,7 @@ export class SearchDialog {
       this.input.value = ''
     }
     this.provider = auth.provider
-    this.heading.textContent = `AGREGAR DESDE ${PROVIDER_NAMES[auth.provider].toUpperCase()}`
+    this.heading.textContent = t('addFromHeading', { service: PROVIDER_NAMES[auth.provider] })
     if (this.history.length === 1) void this.show()
   }
 
@@ -143,10 +138,10 @@ export class SearchDialog {
 
   private renderFilters(): void {
     this.filters.replaceChildren(
-      ...FILTERS.map(({ filter, label }) =>
+      ...FILTERS.map((filter) =>
         el('button', {
           className: `sd-filter ${filter === this.filter ? 'active' : ''}`,
-          textContent: label,
+          textContent: t(filter),
           onclick: () => {
             this.filter = filter
             this.renderFilters()
@@ -174,49 +169,49 @@ export class SearchDialog {
     if (!this.catalog) {
       this.crumb.textContent = ''
       const setup = el('button', {
-        textContent: 'Activar búsqueda…',
+        textContent: t('enableSearch'),
         onclick: () => {
           this.close()
           document.dispatchEvent(new CustomEvent('setup:open'))
         }
       })
       const hint = this.provider === 'spotify'
-        ? 'Conectá tu cuenta Premium para buscar y elegir música de Spotify.'
-        : 'Para buscar y elegir música de TIDAL desde acá, activá el modo catálogo.'
+        ? t('enableSpotifySearch')
+        : t('enableTidalSearch')
       this.message(hint, el('br'), el('br'), setup)
       return
     }
 
     try {
       if (view.kind === 'home') {
-        this.crumb.textContent = 'Tu biblioteca'
+        this.crumb.textContent = t('yourLibrary')
         this.renderHome()
       } else if (view.kind === 'search') {
-        this.crumb.textContent = `Búsqueda: ${view.query}`
-        this.message('Buscando…')
+        this.crumb.textContent = t('searchResultsFor', { query: view.query })
+        this.message(t('searching'))
         const results = await window.remote.search(view.query)
         if (stale()) return
         this.lastResults = results
         this.renderSearch(results)
       } else if (view.kind === 'liked') {
-        this.crumb.textContent = '♥ Temas favoritos'
-        this.message('Cargando…')
+        this.crumb.textContent = `♥ ${t('likedTracks')}`
+        this.message(t('loading'))
         const tracks = await library.liked()
         if (!stale()) this.renderTracks(tracks, true)
       } else if (view.kind === 'section') {
-        this.crumb.textContent = SECTIONS.find((s) => s.section === view.section)?.label ?? ''
-        this.message('Cargando…')
+        this.crumb.textContent = t(view.section)
+        this.message(t('loading'))
         const collections = await library.section(view.section)
         if (!stale()) this.renderCollections(collections)
       } else {
         const { collection } = view
         this.crumb.textContent = collection.subtitle ? `${collection.name} — ${collection.subtitle}` : collection.name
-        this.message('Cargando…')
+        this.message(t('loading'))
         const tracks = await library.tracks(collection)
         if (!stale()) this.renderTracks(tracks, true)
       }
     } catch {
-      if (!stale()) this.message('No se pudo cargar')
+      if (!stale()) this.message(t('loadFailed'))
     }
   }
 
@@ -225,22 +220,22 @@ export class SearchDialog {
       el('div', { className: 'sd-home-item', textContent: label, onclick: () => this.navigate(view) })
     if (!this.connected) {
       this.list.replaceChildren(
-        el('div', { className: 'ml-group' }, 'MODO CATÁLOGO'),
+        el('div', { className: 'ml-group' }, t('catalogMode')),
         el(
           'div',
           { className: 'ml-empty' },
           this.provider === 'ytmusic'
-            ? 'Escribí arriba para buscar temas, discos, artistas o playlists. Iniciá sesión en la Media Library para ver tus favoritos y playlists.'
-            : 'Escribí arriba para buscar temas, discos, artistas o playlists públicas. Tus favoritos, mixes y playlists aparecen cuando TIDAL habilite el login de la app.'
+            ? t('searchYoutubeHelp')
+            : t('searchTidalHelp')
         )
       )
       return
     }
     this.list.replaceChildren(
-      el('div', { className: 'ml-group' }, 'ELEGÍ DE TU BIBLIOTECA O BUSCÁ ARRIBA'),
-      entry('♥  Temas favoritos', { kind: 'liked' }),
-      ...SECTIONS.filter(({ section }) => section !== 'mixes' || this.mixes)
-        .map(({ section, label }) => entry(`◉  ${label}`, { kind: 'section', section }))
+      el('div', { className: 'ml-group' }, t('chooseFromLibrary')),
+      entry(`♥ ${t('likedTracks')}`, { kind: 'liked' }),
+      ...SECTIONS.filter((section) => section !== 'mixes' || this.mixes)
+        .map((section) => entry(`◉  ${t(section)}`, { kind: 'section', section }))
     )
   }
 
@@ -248,8 +243,8 @@ export class SearchDialog {
   private renderTracks(tracks: Track[], asContext: boolean): void {
     if (tracks.length) {
       this.actions.replaceChildren(
-        el('button', { textContent: '▶ Todo', title: 'Reemplaza la playlist y reproduce', onclick: () => this.controller.loadList(tracks, 0) }),
-        el('button', { textContent: '+ Todo', title: 'Agrega todo al final de la playlist', onclick: () => this.controller.enqueue(tracks) })
+        el('button', { textContent: t('playAll'), title: t('playAllHint'), onclick: () => this.controller.loadList(tracks, 0) }),
+        el('button', { textContent: t('addAll'), title: t('addAllHint'), onclick: () => this.controller.enqueue(tracks) })
       )
     }
     this.list.replaceChildren(
@@ -265,7 +260,7 @@ export class SearchDialog {
               this.connected
             )
           )
-        : [el('div', { className: 'ml-empty' }, 'Vacío')])
+        : [el('div', { className: 'ml-empty' }, t('empty'))])
     )
   }
 
@@ -284,7 +279,7 @@ export class SearchDialog {
 
   private renderCollections(collections: Collection[]): void {
     this.list.replaceChildren(
-      ...(collections.length ? this.collectionRows(collections) : [el('div', { className: 'ml-empty' }, 'Nada por acá todavía')])
+      ...(collections.length ? this.collectionRows(collections) : [el('div', { className: 'ml-empty' }, t('nothingHere'))])
     )
   }
 
@@ -293,7 +288,7 @@ export class SearchDialog {
     const groups: [Filter, string, HTMLElement[]][] = [
       [
         'tracks',
-        'TEMAS',
+        t('tracks').toUpperCase(),
         results.tracks.map((track, index) =>
           trackRow(
             track,
@@ -303,14 +298,14 @@ export class SearchDialog {
           )
         )
       ],
-      ['albums', 'ÁLBUMES (CD)', this.collectionRows(results.albums)],
-      ['artists', 'ARTISTAS', this.collectionRows(results.artists)],
-      ['playlists', 'PLAYLISTS', this.collectionRows(results.playlists)]
+      ['albums', t('searchCollection').toUpperCase(), this.collectionRows(results.albums)],
+      ['artists', t('artists').toUpperCase(), this.collectionRows(results.artists)],
+      ['playlists', t('playlists').toUpperCase(), this.collectionRows(results.playlists)]
     ]
     const nodes = groups
       .filter(([filter, , rows]) => show(filter) && rows.length)
       .flatMap(([, label, rows]) => [el('div', { className: 'ml-group' }, label), ...rows])
-    this.list.replaceChildren(...(nodes.length ? nodes : [el('div', { className: 'ml-empty' }, 'Sin resultados')]))
+    this.list.replaceChildren(...(nodes.length ? nodes : [el('div', { className: 'ml-empty' }, t('noResults'))]))
   }
 
   // ---- Keyboard ------------------------------------------------------------------

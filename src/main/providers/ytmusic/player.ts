@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { BrowserWindow, session as sessions, type Session } from 'electron'
 
 /**
@@ -152,7 +153,7 @@ export class YtPlayerWindow {
           if (await this.run<boolean>(`!!document.querySelector('#movie_player')`).catch(() => false)) return
           await new Promise((r) => setTimeout(r, 300))
         }
-        throw new Error('YouTube Music no cargó. Revisá la conexión a internet.')
+        throw new Error(t('youtubeLoadFailed'))
       })()
       this.ready.catch(() => (this.ready = undefined))
     }
@@ -161,7 +162,7 @@ export class YtPlayerWindow {
 
   private run<T>(script: string): Promise<T> {
     const window = this.window
-    if (!window || window.isDestroyed()) return Promise.reject(new Error('YouTube Music no está abierto'))
+    if (!window || window.isDestroyed()) return Promise.reject(new Error(t('youtubeClosed')))
     return window.webContents.executeJavaScript(script, true) as Promise<T>
   }
 
@@ -202,7 +203,7 @@ export class YtPlayerWindow {
       const onCookie = (): void => void check()
       const onHide = (): void => {
         cleanup()
-        reject(new Error('Inicio de sesión cancelado'))
+        reject(new Error(t('signInCancelled')))
       }
       const cleanup = (): void => {
         this.session.cookies.off('changed', onCookie)
@@ -236,7 +237,7 @@ export class YtPlayerWindow {
   async importCookies(text: string): Promise<void> {
     const cookies = parseCookies(text)
     if (!cookies.some((c) => /^(__Secure-3PAPISID|SAPISID)$/.test(c.name))) {
-      throw new Error('Eso no tiene la sesión de YouTube (falta la cookie SAPISID). Revisá que estés logueado y copiá todo.')
+      throw new Error(t('youtubeMissingCookie'))
     }
     const expirationDate = Date.now() / 1000 + 365 * 24 * 3600
     for (const { name, value } of cookies) {

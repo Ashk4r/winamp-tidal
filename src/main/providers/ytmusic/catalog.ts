@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { Innertube } from 'youtubei.js'
 import type { Collection, CollectionKind, SearchResults, Track } from '@shared/types'
 
@@ -34,7 +35,6 @@ interface Item {
 const MAX_PLAYLIST_PAGES = 10
 /** Home page sections to look through for the user's mixes. */
 const HOME_PAGES = 4
-const NEEDS_LOGIN = 'Iniciá sesión en YouTube Music para ver tu biblioteca'
 
 const text = (value: string | Text | undefined): string => (value == null ? '' : String(value)).trim()
 const columns = (item: Item): string[] => (item.flex_columns ?? []).map((c) => text(c.title))
@@ -118,7 +118,7 @@ export class YtCatalog {
   }
 
   private ensureLogin(): void {
-    if (!this.loggedIn) throw new Error(NEEDS_LOGIN)
+    if (!this.loggedIn) throw new Error(t('youtubeNeedsSignIn'))
   }
 
   async search(query: string): Promise<SearchResults> {

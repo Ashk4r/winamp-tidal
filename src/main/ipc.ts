@@ -1,3 +1,4 @@
+import { isLanguage, setLanguage, t } from '@shared/i18n'
 import { ipcMain, type BrowserWindow } from 'electron'
 import type { AuthInfo, Collection, EqState, PlayContext, ProviderId, TidalCredentials, Track } from '@shared/types'
 import { settingsStore } from './auth/store'
@@ -30,12 +31,11 @@ export function registerIpc(window: BrowserWindow): () => void {
     capabilities: provider.capabilities,
     configured: provider.configured,
     connected: provider.connected,
-    catalog: provider.catalogAvailable,
-    hint: provider.capabilities.externalApp && !provider.configured ? 'Solo control remoto' : undefined
+    catalog: provider.catalogAvailable
   })
   // Credentials only exist for TIDAL's catalog mode.
   const tidal = (): TidalProvider => {
-    if (!(provider instanceof TidalProvider)) throw new Error('Esto solo aplica a TIDAL')
+    if (!(provider instanceof TidalProvider)) throw new Error(t('tidalOnly'))
     return provider
   }
 
@@ -89,13 +89,13 @@ export function registerIpc(window: BrowserWindow): () => void {
     return auth()
   })
   handle('importYouTubeSession', async (text: string) => {
-    if (!(provider instanceof YtMusicProvider)) throw new Error('Esto solo aplica a YouTube Music')
+    if (!(provider instanceof YtMusicProvider)) throw new Error(t('youtubeOnly'))
     await provider.importSession(text)
     await provider.loadLiked().catch(() => undefined)
     return auth()
   })
   handle('setProvider', async (id: ProviderId) => {
-    if (id !== 'tidal' && id !== 'ytmusic' && id !== 'spotify') throw new Error('Servicio desconocido')
+    if (id !== 'tidal' && id !== 'ytmusic' && id !== 'spotify') throw new Error(t('unknownService'))
     // TIDAL's setup continues with its catalog choice.
     settingsStore.update({ provider: id, ...(id !== 'tidal' ? { setupDone: true } : {}) })
     if (id !== provider.id) {
@@ -116,6 +116,11 @@ export function registerIpc(window: BrowserWindow): () => void {
     return auth()
   })
   handle('getSettings', () => settingsStore.get())
+  handle('setLanguage', (language: unknown) => {
+    if (!isLanguage(language)) throw new Error(t('unknownLanguage'))
+    settingsStore.update({ language })
+    setLanguage(language)
+  })
   handle('setSkin', (url: string | undefined) => {
     settingsStore.update({ skinUrl: url })
   })

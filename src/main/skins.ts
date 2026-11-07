@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { existsSync, mkdirSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -65,7 +66,7 @@ export async function searchSkins(query: string): Promise<MuseumSkin[]> {
       variables: { q: query }
     })
   })
-  if (!response.ok) throw new Error(`No se pudo buscar en el Skin Museum (${response.status})`)
+  if (!response.ok) throw new Error(t('skinSearchFailed', { status: response.status }))
   const { data } = (await response.json()) as { data?: { search_skins: MuseumResult[] } }
   return (data?.search_skins ?? [])
     .filter((skin) => !skin.nsfw && skin.screenshot_url && !/\.wal$/i.test(skin.filename))

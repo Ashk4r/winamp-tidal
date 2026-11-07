@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, ipcMain, screen, shell, type Rectangle } from 'electron'
+import { setLanguage } from '@shared/i18n'
 import type { DesktopLayout } from '@shared/types'
 import { settingsStore } from './auth/store'
 import { registerIpc } from './ipc'
@@ -129,6 +130,7 @@ function createWindow(): void {
 
 registerSkinScheme()
 app.whenReady().then(() => {
+  setLanguage(settingsStore.get().language)
   handleSkinScheme()
   createWindow()
 })

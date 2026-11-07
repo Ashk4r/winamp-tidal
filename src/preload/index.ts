@@ -23,6 +23,7 @@ const methods = [
   'getCredentials',
   'setCredentials',
   'getSettings',
+  'setLanguage',
   'setProvider',
   'importYouTubeSession',
   'setSkin',

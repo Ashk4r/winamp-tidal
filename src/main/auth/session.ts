@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { login, refresh, type OAuthConfig, type TokenSet } from './oauthPkce'
 import { tokenStore } from './store'
 
@@ -62,7 +63,7 @@ export class OAuthSession {
   async login(config = this.config()): Promise<void> {
     const revision = this.revision
     const tokens = await login(config)
-    if (revision !== this.revision) throw new ApiError('Login was superseded')
+    if (revision !== this.revision) throw new ApiError(t('loginSuperseded'))
     this.replace(tokens)
   }
 
@@ -82,18 +83,18 @@ export class OAuthSession {
   }
 
   private async accessToken(): Promise<string> {
-    if (!this.tokens) throw new ApiError('Not logged in')
+    if (!this.tokens) throw new ApiError(t('notSignedIn'))
     if (Date.now() < this.tokens.expiresAt) return this.tokens.accessToken
     const revision = this.revision
     const pending = (this.refreshing ??= refresh(this.config(), this.tokens))
     try {
       const tokens = await pending
-      if (revision !== this.revision) throw new ApiError('Session changed during refresh')
+      if (revision !== this.revision) throw new ApiError(t('sessionChanged'))
       this.save(tokens)
       return tokens.accessToken
     } catch (error) {
       if (revision === this.revision) this.replace(undefined)
-      throw new ApiError(`Session expired, please reconnect (${(error as Error).message})`)
+      throw new ApiError(t('sessionExpired', { reason: (error as Error).message }))
     } finally {
       if (this.refreshing === pending) this.refreshing = undefined
     }
@@ -105,7 +106,7 @@ export class OAuthSession {
       url,
       init,
       () => {
-        if (revision !== this.revision) throw new ApiError('Session changed during request')
+        if (revision !== this.revision) throw new ApiError(t('sessionChangedDuringRequest'))
         return this.accessToken()
       },
       () => {
@@ -146,7 +147,7 @@ export class ClientCredentialsSession {
       body: new URLSearchParams({ grant_type: 'client_credentials' })
     })
     if (!response.ok) {
-      throw new ApiError(`Client credentials rejected (${response.status}): ${(await response.text()).slice(0, 200)}`)
+      throw new ApiError(t('credentialsRejected', { status: response.status, details: (await response.text()).slice(0, 200) }))
     }
     const json = (await response.json()) as { access_token: string; expires_in: number }
     this.token = { value: json.access_token, expiresAt: Date.now() + (json.expires_in - 60) * 1000 }

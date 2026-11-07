@@ -1,6 +1,7 @@
 // Types shared by the main process, preload and renderer.
 
 import type { MuseumSkin } from './skins'
+import type { Language } from './i18n'
 
 export interface Track {
   id: string
@@ -96,10 +97,10 @@ export interface AuthInfo {
   connected: boolean
   /** Search and catalog browsing work (user login, or the app's client credentials). */
   catalog: boolean
-  hint?: string
 }
 
 export interface AppSettings {
+  language?: Language
   /** The music service the Winamp drives. */
   provider?: ProviderId
   spotifyClientId?: string
@@ -153,6 +154,7 @@ export interface RemoteApi {
   /** Checks and saves the user's TIDAL app, or `null` for remote-only use. Ends the first-run setup. */
   setCredentials(credentials: TidalCredentials | null): Promise<AuthInfo>
   getSettings(): Promise<AppSettings>
+  setLanguage(language: Language): Promise<void>
   /** Switches the music service; the Winamp playlist should be cleared. */
   setProvider(provider: ProviderId): Promise<AuthInfo>
   /** YouTube Music sign-in with the cookies of the user's own browser (passkey-only accounts). */

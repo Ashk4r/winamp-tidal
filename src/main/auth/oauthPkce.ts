@@ -1,3 +1,4 @@
+import { getLanguage, t } from '@shared/i18n'
 import { createHash, randomBytes } from 'node:crypto'
 import { createServer, type Server } from 'node:http'
 import { shell } from 'electron'
@@ -32,17 +33,17 @@ const base64Url = (buffer: Buffer): string =>
 const loopbackUri = (port: number): string => `http://127.0.0.1:${port}/callback`
 const redirectUri = (config: OAuthConfig): string => config.redirectUri ?? loopbackUri(config.port)
 
-const RESULT_PAGE = (message: string): string => `<!doctype html><meta charset="utf-8">
+const RESULT_PAGE = (message: string): string => `<!doctype html><html lang="${getLanguage()}"><meta charset="utf-8">
 <title>Winamp Remote</title>
 <body style="background:#000;color:#0f0;font:14px monospace;padding:40px">
-<p>${message}</p><p>Ya podés cerrar esta pestaña.</p></body>`
+<p>${message}</p><p>${t('closeTab')}</p></body></html>`
 
 /** Opens the system browser on the provider's login page and waits for the loopback redirect. */
 async function waitForAuthorizationCode(config: OAuthConfig, url: URL, state: string): Promise<string> {
   let server: Server | undefined
   try {
     return await new Promise<string>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('Login timed out')), LOGIN_TIMEOUT_MS)
+      const timer = setTimeout(() => reject(new Error(t('signInTimeout'))), LOGIN_TIMEOUT_MS)
       server = createServer((req, res) => {
         const callback = new URL(req.url ?? '/', loopbackUri(config.port))
         if (callback.pathname !== '/callback') {
@@ -58,12 +59,12 @@ async function waitForAuthorizationCode(config: OAuthConfig, url: URL, state: st
         const code = params.get('code')
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
         if (error || !code) {
-          res.end(RESULT_PAGE('No se pudo iniciar sesión.'))
+          res.end(RESULT_PAGE(t('signInFailed')))
           clearTimeout(timer)
-          reject(new Error(`Login failed: ${error ?? 'invalid response'}`))
+          reject(new Error(t('oauthSignInError', { reason: error ?? t('oauthInvalidResponse') })))
           return
         }
-        res.end(RESULT_PAGE('Login correcto ✔'))
+        res.end(RESULT_PAGE(t('signInSuccess')))
         clearTimeout(timer)
         resolve(code)
       })
@@ -91,7 +92,7 @@ async function requestToken(tokenUrl: string, body: Record<string, string>): Pro
     body: new URLSearchParams(body)
   })
   if (!response.ok) {
-    throw new Error(`Token request failed (${response.status}): ${await response.text()}`)
+    throw new Error(t('oauthTokenError', { status: response.status, details: await response.text() }))
   }
   const json = (await response.json()) as {
     access_token: string
@@ -134,7 +135,7 @@ export async function login(config: OAuthConfig): Promise<TokenSet> {
 }
 
 export async function refresh(config: OAuthConfig, tokens: TokenSet): Promise<TokenSet> {
-  if (!tokens.refreshToken) throw new Error('No refresh token; please log in again')
+  if (!tokens.refreshToken) throw new Error(t('oauthMissingRefresh'))
   const next = await requestToken(config.tokenUrl, {
     grant_type: 'refresh_token',
     refresh_token: tokens.refreshToken,

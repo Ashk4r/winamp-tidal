@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import type { Collection, CredentialsInfo, SearchResults, TidalCredentials, Track } from '@shared/types'
 import { app } from 'electron'
 import { ApiError, ClientCredentialsSession, OAuthSession } from '../auth/session'
@@ -30,8 +31,6 @@ interface Document {
   links?: { next?: string }
 }
 
-const NEEDS_LOGIN = 'Tu biblioteca necesita el login de TIDAL (pendiente de que TIDAL habilite la app)'
-const NEEDS_CATALOG = 'Para buscar en TIDAL activá el modo catálogo con el botón "TIDAL…" de la Media Library'
 
 /** "PT3M25S" → 205000 */
 export function isoDurationToMs(duration: unknown): number {
@@ -125,11 +124,11 @@ export class TidalApi {
       : BUILD_CREDENTIALS
     const catalog = this.catalogSession(next)
     if (credentials) {
-      if (!catalog.configured) throw new ApiError('Pegá el Client ID y el Client Secret de tu app de TIDAL')
+      if (!catalog.configured) throw new ApiError(t('tidalNeedsCredentials'))
       try {
         await catalog.check()
       } catch {
-        throw new ApiError('TIDAL no aceptó ese Client ID / Client Secret. Revisá que estén bien copiados.')
+        throw new ApiError(t('tidalInvalidCredentials'))
       }
     }
     credentialStore.set(credentials ? next : undefined)
@@ -170,7 +169,7 @@ export class TidalApi {
     const init = { headers: { Accept: 'application/vnd.api+json' } }
     if (this.connected) return this.session.request<Document>(url, init)
     if (this.catalog.configured) return this.catalog.request<Document>(url, init)
-    throw new ApiError(NEEDS_LOGIN)
+    throw new ApiError(t('tidalNeedsSignIn'))
   }
 
   private async country(): Promise<string> {
@@ -271,7 +270,7 @@ export class TidalApi {
     return data.map((album) => ({
       kind: 'album' as const,
       id: album.id,
-      name: String(album.attributes?.title ?? 'Álbum'),
+      name: String(album.attributes?.title ?? t('albumFallback')),
       subtitle: included.names(album, 'artists', 'name').join(', '),
       trackCount: Number(album.attributes?.numberOfItems ?? 0) || undefined,
       artworkUrl: included.artwork(album, 'coverArt')
@@ -401,10 +400,10 @@ export class TidalApi {
 
   /** Favorites, playlists, mixes… belong to a user and need a login. */
   async ensureUser(): Promise<void> {
-    if (!this.connected) throw new ApiError(NEEDS_LOGIN)
+    if (!this.connected) throw new ApiError(t('tidalNeedsSignIn'))
   }
 
   async ensureCatalog(): Promise<void> {
-    if (!this.catalogAvailable) throw new ApiError(NEEDS_CATALOG)
+    if (!this.catalogAvailable) throw new ApiError(t('tidalNeedsCatalog'))
   }
 }

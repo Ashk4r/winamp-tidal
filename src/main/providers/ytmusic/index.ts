@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import type { Collection, PlayContext, PlaybackState, SearchResults, Track } from '@shared/types'
 import type { MusicProvider } from '../types'
 import { YtCatalog } from './catalog'
@@ -60,7 +61,7 @@ export class YtMusicProvider implements MusicProvider {
   }
   async ensureUser(): Promise<void> {
     await this.refreshCookie()
-    if (!this.connected) throw new Error('Iniciá sesión en YouTube Music para ver tu biblioteca')
+    if (!this.connected) throw new Error(t('youtubeNeedsSignIn'))
   }
   async ensureCatalog(): Promise<void> {}
 

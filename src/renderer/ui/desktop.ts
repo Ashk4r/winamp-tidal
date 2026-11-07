@@ -127,7 +127,7 @@ export function makeFloating(panel: HTMLElement, handle: HTMLElement, storageKey
   }
 
   handle.addEventListener('pointerdown', (event) => {
-    if ((event.target as HTMLElement).closest('button')) return
+    if ((event.target as HTMLElement).closest('button, select')) return
     const rect = panel.getBoundingClientRect()
     const offsetX = event.clientX - rect.left
     const offsetY = event.clientY - rect.top

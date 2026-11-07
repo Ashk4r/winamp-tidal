@@ -1,3 +1,4 @@
+import { t, type MessageKey } from '@shared/i18n'
 import type { Collection, Track } from '@shared/types'
 import { favorites } from './library'
 
@@ -29,7 +30,7 @@ export function heartButton(trackId: string | undefined, enabled: boolean): HTML
   return el('button', {
     className: `ml-heart ${liked ? 'liked' : ''}`,
     textContent: liked ? '♥' : '♡',
-    title: liked ? 'Quitar de favoritos' : 'Agregar a favoritos',
+    title: liked ? t('removeFavorite') : t('addFavorite'),
     disabled: trackId == null || !enabled,
     onclick: stop(() => trackId && favorites.toggle(trackId))
   })
@@ -54,8 +55,8 @@ const actionButtons = ({ play, add }: RowActions, what: string, sourceUrl?: stri
     'span',
     { className: 'row-actions' },
     ...(sourceUrl ? [spotifyLink(sourceUrl)] : []),
-    el('button', { className: 'row-play', textContent: '▶', title: `Reproducir ${what}`, onclick: stop(play) }),
-    el('button', { className: 'row-add', textContent: '+', title: `Agregar ${what} a la playlist`, onclick: stop(add) })
+    el('button', { className: 'row-play', textContent: '▶', title: t('playItem', { item: what }), onclick: stop(play) }),
+    el('button', { className: 'row-add', textContent: '+', title: t('addItem', { item: what }), onclick: stop(add) })
   )
 
 export function spotifyLink(href = 'https://open.spotify.com/'): HTMLAnchorElement {
@@ -63,7 +64,7 @@ export function spotifyLink(href = 'https://open.spotify.com/'): HTMLAnchorEleme
     href,
     target: '_blank',
     className: 'spotify-link',
-    title: 'Abrir en Spotify',
+    title: t('openSpotify'),
     textContent: 'Spotify ↗',
     onclick: (event) => event.stopPropagation(),
     ondblclick: (event) => event.stopPropagation()
@@ -75,29 +76,29 @@ export function trackRow(track: Track, index: number, actions: RowActions, likeE
   heart.dataset.trackId = track.id
   const row = el(
     'div',
-    { className: 'ml-track', title: 'Doble click: reproducir', ondblclick: () => actions.play() },
+    { className: 'ml-track', title: t('doubleClickPlay'), ondblclick: () => actions.play() },
     el('span', { className: 'n' }, String(index + 1)),
     heart,
     el('span', { className: 't' }, track.title),
     el('span', { className: 'a' }, track.artist),
     el('span', { className: 'd' }, formatDuration(track.durationMs)),
-    actionButtons(actions, 'el tema', track.sourceUrl)
+    actionButtons(actions, t('theTrack'), track.sourceUrl)
   )
   row.dataset.trackId = track.id
   return row
 }
 
-const KIND_LABEL: Record<Collection['kind'], string> = {
-  album: 'el álbum',
-  playlist: 'la playlist',
-  mix: 'el mix',
-  artist: 'los temas del artista'
+const KIND_LABEL: Record<Collection['kind'], MessageKey> = {
+  album: 'theAlbum',
+  playlist: 'thePlaylist',
+  mix: 'theMix',
+  artist: 'artistTracks'
 }
 
 export function collectionRow(collection: Collection, open: () => void, actions?: RowActions): HTMLElement {
   return el(
     'div',
-    { className: 'ml-collection', title: 'Click: ver temas', onclick: open },
+    { className: 'ml-collection', title: t('clickOpenTracks'), onclick: open },
     collection.artworkUrl
       ? el('img', { src: collection.artworkUrl, alt: '', loading: 'lazy' })
       : el('div', { className: 'ml-cover-placeholder' }, collection.kind === 'artist' ? '☺' : '♫'),
@@ -108,12 +109,12 @@ export function collectionRow(collection: Collection, open: () => void, actions?
       el(
         'div',
         { className: 'sub' },
-        [collection.subtitle, collection.trackCount != null ? `${collection.trackCount} temas` : '']
+        [collection.subtitle, collection.trackCount != null ? t('trackCount', { count: collection.trackCount }) : '']
           .filter(Boolean)
           .join(' · ')
       )
     ),
     ...(collection.sourceUrl ? [spotifyLink(collection.sourceUrl)] : []),
-    ...(actions ? [actionButtons(actions, KIND_LABEL[collection.kind])] : [])
+    ...(actions ? [actionButtons(actions, t(KIND_LABEL[collection.kind]))] : [])
   )
 }

@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { hostname } from 'node:os'
 import {
   SPOTIFY_CALLBACK_PORT,
@@ -60,7 +61,7 @@ export interface SpotifyPlayback {
 }
 
 function spotifyId(id: string): string {
-  if (!ID.test(id)) throw new Error('ID de Spotify inválido')
+  if (!ID.test(id)) throw new Error(t('spotifyIdInvalid'))
   return id
 }
 
@@ -124,8 +125,8 @@ export class SpotifyApi {
 
   async login(value = this.clientId): Promise<void> {
     const id = value.trim()
-    if (!/^[a-f\d]{32}$/i.test(id)) throw new Error('Ingresá un Client ID válido del Spotify Developer Dashboard.')
-    if (this.loggingIn) throw new Error('Ya hay un inicio de sesión de Spotify en curso.')
+    if (!/^[a-f\d]{32}$/i.test(id)) throw new Error(t('spotifyClientIdInvalid'))
+    if (this.loggingIn) throw new Error(t('spotifySignInPending'))
     this.loggingIn = this.session.login(this.config(id))
     try {
       await this.loggingIn
@@ -138,13 +139,13 @@ export class SpotifyApi {
   }
 
   logout(): void {
-    if (this.loggingIn) throw new Error('Ya hay un inicio de sesión de Spotify en curso.')
+    if (this.loggingIn) throw new Error(t('spotifySignInPending'))
     this.session.logout()
     this.deviceId = undefined
   }
 
   async ensureUser(): Promise<void> {
-    if (this.loggingIn || !this.connected) throw new Error('Conectá Spotify desde la Media Library.')
+    if (this.loggingIn || !this.connected) throw new Error(t('spotifyConnectFirst'))
   }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T | undefined> {
@@ -240,7 +241,7 @@ export class SpotifyApi {
     const result = await this.request<{ devices: Device[] }>('/me/player/devices')
     const desktop = result?.devices.find((device) => device.id && !device.is_restricted && this.isLocalDevice(device))
     if (!desktop?.id) {
-      throw new Error('Abrí Spotify en esta PC con la misma cuenta y reproducí un tema para activar el dispositivo.')
+      throw new Error(t('spotifyActivateDevice'))
     }
     return desktop.id
   }
